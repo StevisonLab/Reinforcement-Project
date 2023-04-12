@@ -2,7 +2,7 @@ library('GenWin')
 setwd('~/Desktop/Reinforcement_Project/VCFS/filtered_vcfs/SNP_vcfs')
 require(data.table)
 
-for (CHROM in 1:18)
+for (CHROM in 1:20)
 {
   Filename = paste('Reinforcement.chr', CHROM, '.MAF.txt.gz', sep = "")
   File = fread(Filename)
