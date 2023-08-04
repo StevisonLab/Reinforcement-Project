@@ -153,7 +153,7 @@ ADMIXTURE_Divergence_dframe = mergeByOverlaps(Tajima_ADMIXTURE_dframe$ADMIXTURE_
 # Loop through all chromosomes to make a vector of chromosomes aligned to stats
 # The replicate function is using two parameters
 # These are the "lengths" or numbers of times each chromosome is associated with a window in the file
-# and the then this number is used to replicate the chromosome name or "value" that many times
+# and then this number is used to replicate the chromosome name or "value" that many times
 
 all_stats_chromosomes = NULL
 for (CHROM in c(1:22)) 
@@ -251,9 +251,12 @@ write.table(transcripts_bed_all, file = "../Transcripts_Stats.bed", quote = FALS
 write.table(transposons_bed_all, file = "../Transposons_Stats.bed", quote = FALSE,
             row.names = FALSE, sep = '\t', col.names = TRUE)
 
+# Rank Fst and Dxy values
 
 fst_ranking = reordered_stats[ , c(4, 10:109)]
 dxy_ranking = reordered_stats[ , c(7, 110:209)]
+
+# Use this ranking to find empirical Fst values greater than 95% of permutations and turn into GRange object
 
 Fst_P5 = NULL
 for (row in 1:NROW(fst_ranking))
@@ -263,6 +266,8 @@ for (row in 1:NROW(fst_ranking))
 }
 
 Fst_P5_GRange = GRanges(seqname = Fst_P5$CHROM, IRanges(start = as.numeric(Fst_P5$START) + 1, end = as.numeric(Fst_P5$END)), data_id = Fst_P5$FstDiff_original)
+
+# Follow above procedure for Dxy
 
 Dxy_P5 = NULL
 for (row in 1:NROW(dxy_ranking))
@@ -274,9 +279,13 @@ for (row in 1:NROW(dxy_ranking))
 
 Dxy_P5_GRange = GRanges(seqname=Dxy_P5$CHROM, IRanges(start = as.numeric(Dxy_P5$START) + 1, end = as.numeric(Dxy_P5$END)), data_id = Dxy_P5$DxyDiff_original)
 
+# Apply threshold to identify significant Tajima's D and ADMIXTURE values
+
 TajimaD_bottom = subset(all_stats_GRange, as.numeric(TajimaDiff) < -1)
 
 ADMIXTURE_2.5_percent = subset(all_stats_GRange, as.numeric(ParaCyno_ADMIXTURE) < 0.025) 
+
+# Overlap all these statistics, which must be done in a pairwise fashion
 
 Top_Dxy_overlaps = mergeByOverlaps(all_stats_GRange, Dxy_P5_GRange)
 Top_Fst_overlaps = mergeByOverlaps(all_stats_GRange, Fst_P5_GRange)
@@ -287,15 +296,24 @@ Fst_TajimaD_overlap = mergeByOverlaps(Top_Fst_overlaps$Fst_P5_GRange, TajimaD_AD
 Dxy_TajimaD_overlap = mergeByOverlaps(Top_Dxy_overlaps$Dxy_P5_GRange, TajimaD_ADMIXTURE_overlaps$`Bottom_TajimaD_overlaps$TajimaD_bottom`)
 colnames(Fst_TajimaD_overlap)[colnames(Fst_TajimaD_overlap) == "TajimaD_ADMIXTURE_overlaps$`Bottom_TajimaD_overlaps$TajimaD_bottom`"] <- "final_data" 
 colnames(Dxy_TajimaD_overlap)[colnames(Dxy_TajimaD_overlap) == "TajimaD_ADMIXTURE_overlaps$`Bottom_TajimaD_overlaps$TajimaD_bottom`"] <- "final_data" 
+
+# Identify outliers for only Fst, only Dxy, and both
+
 Fst_unique = subsetByOverlaps(Fst_TajimaD_overlap$final_data, Dxy_TajimaD_overlap$final_data, invert = TRUE)
 Fst_unique$outlier_type = "Fst"
 Dxy_unique = subsetByOverlaps(Dxy_TajimaD_overlap$final_data, Fst_TajimaD_overlap$final_data, invert = TRUE)
 Dxy_unique$outlier_type = "Dxy"
 Fst_Dxy_overlap = mergeByOverlaps(Fst_TajimaD_overlap$final_data, Dxy_TajimaD_overlap$final_data)
 final_stats = c(Fst_unique, Dxy_unique, Fst_Dxy_overlap$`Dxy_TajimaD_overlap$final_data`)
+
+# Overlap these with gene transcript and repeat element annotations
+
 transcripts_overlap_outliers = mergeByOverlaps(Transcripts, final_stats)
 transposons_overlap_outliers = mergeByOverlaps(TE_file, final_stats)
 length(unique(transcripts_overlap_outliers$Transcripts@seqnames))
+
+# Procedure carried out on transcripts and repeat elements to name 
+# chromosomes correctly as done several steps above for "all_stats_chromosomes"
 
 transcript_chromosomes_outliers = NULL
 for (CHROM in c(1:20)) 
@@ -312,6 +330,8 @@ for (CHROM in c(1:20))
   replicate(transposons_overlap_outliers$final_stats@seqnames@lengths[CHROM], 
   toString(transposons_overlap_outliers$final_stats@seqnames@values[CHROM])))
 }
+
+# Create complete data set of stats for transcripts and separately repeat elements
 
 transcripts_bed_outliers = data.frame(cbind(transcript_chromosomes_outliers,
            transcripts_overlap_outliers$final_stats@ranges@start,
@@ -362,38 +382,27 @@ names(transposons_bed_outliers) = c('CHROM', 'START', 'END', 'Name',
                                     'FstDiff', 'DxyDiff', 'ParaCyno_D', 'AlloCyno_D', 
                                     'ParaRhe_D', 'AlloRhe_D', 'TajimaDiff', 'Outlier_type')
 
+# Write out, respectively, bed file of transcripts
+
 write.table(transcripts_bed_outliers, file="../Outlier_Transcripts.bed", quote=FALSE,
             row.names = FALSE, sep = '\t', col.names = TRUE)
+
+# bed file of ranked transcripts
 
 write.table(transcripts_bed_ranked, file="../Outlier_Transcripts_Ranked.bed", quote=FALSE,
             row.names = FALSE, sep = '\t', col.names = TRUE)
 
+# bed file of repeat elements
+
 write.table(transposons_bed_outliers, file="../Outlier_Transposons.bed", quote=FALSE,
             row.names = FALSE, sep = '\t', col.names = TRUE)
+
+# simple text files of transcript and gene names alone
 
 write.table(transcripts_bed_outliers$Transcript, file="../Outlier_Transcripts.txt", quote=FALSE,
             row.names = FALSE, sep = '\t', col.names = TRUE)
 
 write.table(transcripts_bed_outliers$Gene, file="../Outlier_Genes.txt", quote=FALSE,
             row.names = FALSE, sep = '\t', col.names = TRUE)
-
-
-png("../Fst_Histogram.png", res=700, height = 5.29, width = 8, units="in")
-plot(ParaFstHist, col = rgb(1,0,0,0.4), xlab = 'Genetic Divergence (Fst)', main = NA)
-plot(AlloFstHist, col = rgb(0,0,1,0.4), add = TRUE)
-legend(0.5, 50000, c(paste('Parapatric Fst: Mean = ', 
-      signif(mean(combined_stats$ParaFst_original, na.rm = TRUE), digits = 2)),
-        paste('Allopatric Fst: Mean = ', signif(mean(combined_stats$AlloFst_original, na.rm = TRUE), digits = 2))), 
-       fill = c(rgb(1,0,0,0.4), rgb(0,0,1,0.4)), cex = 1, bty = 'n')
-text(0.8, 25000, "SNP Count = 31,639,415\nSite Count = 1,333,185,598\nSNP/Sites = 2.37%", cex = 1)
-dev.off()
-
-plot(ParaDxyHist, col = rgb(1,0,0,0.4), xlab = 'Genetic Divergence (Fst)', main = NA)
-plot(AlloDxyHist, col = rgb(0,0,1,0.4), add = TRUE)
-legend(0.5, 50000, c(paste('Parapatric Dxy: Mean = ', 
-                           signif(mean(combined_stats$ParaDxy_original, na.rm = TRUE), digits = 2)),
-                     paste('Allopatric Dxy: Mean = ', signif(mean(combined_stats$AlloDxy_original, na.rm = TRUE), digits = 2))), 
-       fill = c(rgb(1,0,0,0.4), rgb(0,0,1,0.4)), cex = 1, bty = 'n')
-text(0.8, 25000, "SNP Count = 31,639,415\nSite Count = 1,333,185,598\nSNP/Sites = 2.37%", cex = 1)
 
 
