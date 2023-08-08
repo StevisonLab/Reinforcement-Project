@@ -67,7 +67,7 @@ XFEigenValues <- read_delim("Reinforcement.chr21.female.eigenval", delim = "\t",
 XFEigenVectors <- read_delim("Reinforcement.chr21.female.eigenvec", delim = "\t")
 XFEigenPercent <- round((XFEigenValues / (sum(XFEigenValues))*100), 2)
 
-# Create plots for autosome, chrY, male chrX, and female chrX PCA respectively
+# Create plots for autosome PC 1 and 2, autosome PC 3 and 4, chrY, male chrX, and female chrX PCA respectively
 
 AutoPlot = ggplot(data = AutoEigenVectors) +
   geom_point(mapping = aes(x = PC1, y = PC2, color = SID, shape = SID), 
@@ -79,6 +79,17 @@ AutoPlot = ggplot(data = AutoEigenVectors) +
        colour = "Populations", shape = "Populations") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 20))
+
+AutoPlotXtra = ggplot(data = AutoEigenVectors) +
+  geom_point(mapping = aes(x = PC3, y = PC4, color = SID, shape = SID), 
+             size = 3, show.legend = FALSE) +
+  geom_hline(yintercept = 0, linetype="dotted") +
+  geom_vline(xintercept = 0, linetype="dotted") +
+  labs(title = "Autosomes Additional Components", x = paste0("PC3 (",AutoEigenPercent[3,1]," %)"),
+       y = paste0("PC4 (",AutoEigenPercent[4,1]," %)"),
+       colour = "Populations", shape = "Populations") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15))
 
 YPlot = ggplot(data = YEigenVectors) +
   geom_point(mapping = aes(x = PC1, y = PC2, color = SID, shape = SID), 
@@ -102,7 +113,7 @@ XMPlot = ggplot(data = XMEigenVectors) +
        y = paste0("PC2 (",XMEigenPercent[2,1]," %)"),
        colour = "Populations", shape = "Populations") +
   theme_minimal() +
-  theme(legend.position = c(0.15, 0.85), 
+  theme(legend.position = c(0.25, 0.85), 
         legend.box.background = element_rect(color = "black", size = 1)) +
   theme(plot.title = element_text(hjust = 0.5, size = 20))
 
@@ -118,15 +129,15 @@ XFPlot = ggplot(data = XFEigenVectors) +
   theme(plot.title = element_text(hjust = 0.5, size = 20))
 
 # Arrange autosome and chrY plots into a two panel image with some space in the middle to make main figure
-# Do the same for male and female chrX to make supplemental figure
+# Do the same for male and female chrX and autosome PC 3 and 4 to make supplemental figure
 
 PCA_plot = ggarrange(AutoPlot, NULL, YPlot,
                     labels = c('B','', 'C'), font.label = list(size = 25),
                     ncol = 3, widths = c(1, 0.05, 1))
 
-Supp_PCA_plot = ggarrange(XMPlot, NULL, XFPlot,
-                    labels = c('A','', 'B'), font.label = list(size = 25),
-                    ncol = 3, widths = c(1, 0.05, 1))
+Supp_PCA_plot = ggarrange(XMPlot, NULL, XFPlot, NULL, AutoPlotXtra,
+                    labels = c('A', '', 'B', '', 'C'), font.label = list(size = 25),
+                    ncol = 5, widths = c(1, 0.05, 1, 0.05, 1))
 
 # Save images as PNG files
 
