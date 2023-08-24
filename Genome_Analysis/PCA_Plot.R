@@ -132,7 +132,7 @@ XFPlot = ggplot(data = XFEigenVectors) +
 # Do the same for male and female chrX and autosome PC 3 and 4 to make supplemental figure
 
 PCA_plot = ggarrange(AutoPlot, NULL, YPlot,
-                    labels = c('B','', 'C'), font.label = list(size = 25),
+                    labels = c('A','', 'B'), font.label = list(size = 25),
                     ncol = 3, widths = c(1, 0.05, 1))
 
 Supp_PCA_plot = ggarrange(XMPlot, NULL, XFPlot, NULL, AutoPlotXtra,
