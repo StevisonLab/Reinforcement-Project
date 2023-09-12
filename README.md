@@ -36,4 +36,16 @@ GenWin_SNPs.R must then be run with this data (for all chromosomes) as input. It
 
 ## Gene Analysis
 
-These final scripts constitute some analysis of candidate genes extracted from the above data (process detailed more in associated manuscript). ParaCyno.Unique.py should be run first to isolate variants that are unique to parapatric (Para) _M. fascicularis_ (Cyno). This data can be input into SIFT, and output from that can be used for B-SIFT.sh. Similarly this file is necessary for running tomtom_parallel.sh. For that script, it is also necessary to generate reference and alternate FASTA files using something like bcftools consensus. tomtom_extraction_parallel.sh must be run after this script to extract data in a neat format. This is analogous to ADMIXTURE_parse.sh above. 
+These final scripts constitute some analysis of candidate genes extracted from the above data (process detailed more in associated manuscript). ParaCyno.Unique.py should be run first to isolate variants that are unique to parapatric (Para) _M. fascicularis_ (Cyno). This data can then be input into SnpEff like so:
+
+```/tools/snpeff-5.0/scripts/snpEff eff -c /home/npb0015/Arctoides_unique/snpEff.config Mmul_10.99 -csvStats ParaCyno.Unique.stats.csv ParaCyno.Unique.vcf > ParaCyno.Unique.annotated.vcf```
+
+The annotated.vcf file resulting from this can then be input into SnpSift (part of SnpEff, not the same as SIFT also used in this study!) to extract specific kinds of sites. For example:
+
+```java -jar /tools/snpeff-5.0/SnpSift.jar filter "(ANN[*].EFFECT has 'upstream_gene_variant') | (ANN[*].EFFECT has 'intron_variant') | (ANN[*].EFFECT has 'downstream_gene_variant') | (ANN[*].EFFECT has '5_prime_UTR_variant') | (ANN[*].EFFECT has '3_prime_UTR_variant')" -f ../SnpEff_data/ParaCyno.Unique.annotated.vcf > ParaCyno.Unique.motif.vcf```
+
+This produces variant that can be subject to motif analysis through tomtom as it includes a variant of types of sites (e.g. upstream variants or intron variants) that are possible binding sites for transcription factors. The above command specifically does not include coding variants, but an equivalent command including those can generate output usable by SIFT. 
+
+So SIFT can be run on that data and output from that can be used for B-SIFT.sh. Similarly the output from the above command is necessary for running tomtom_parallel.sh. For that script, it is also necessary to generate reference and alternate FASTA files using something like bcftools consensus, which is also used in our previous study [Mitonuclear-Analysis-Project](https://github.com/StevisonLab/Mitonuclear-Analysis-Project). tomtom_extraction_parallel.sh must be run after this script to extract data in a neat format. This is analogous to ADMIXTURE_parse.sh above. 
+
+We neglect the details of generating or obtaining databases for SnpEff, SIFT, and tomtom as these are partly described in the associated manuscript for this study (and the respective documentation of these programs) and are too detailed to include here. 
